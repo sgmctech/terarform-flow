@@ -1,4 +1,4 @@
-name: 'Terraform Deployment with Confirmation and Region as Variable'
+name: 'Terraform Deployment with Plan Review and Approval'
 
 on:
   workflow_dispatch:
@@ -18,17 +18,10 @@ on:
         options:
           - us-east-1
           - us-east-2
-      confirm_apply:
-        description: 'Do you want to apply the changes? (yes or no)'
-        required: true
-        type: choice
-        options:
-          - yes
-          - no
 
 jobs:
   terraform:
-    name: 'Terraform Apply with Confirmation and Region as Variable'
+    name: 'Terraform Plan and Approval Workflow'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -50,41 +43,37 @@ jobs:
         env:
           TF_LOG: ERROR
 
-      - name: Plan Terraform
+      - name: Generate Terraform Plan
+        id: plan
         run: |
-          echo "Planning Terraform for environment: ${{ github.event.inputs.environment }} in region: ${{ github.event.inputs.region }}"
+          echo "Generating Terraform plan for environment: ${{ github.event.inputs.environment }} in region: ${{ github.event.inputs.region }}"
           terraform plan -var="environment=${{ github.event.inputs.environment }}" \
                          -var="region=${{ github.event.inputs.region }}" \
-                         -var-file=environments/${{ github.event.inputs.environment }}/variables.tfvars
+                         -var-file=environments/${{ github.event.inputs.environment }}/variables.tfvars \
+                         -out=tfplan
         env:
           TF_LOG: ERROR
-        continue-on-error: false
 
-      - name: User Confirmation Check
-        if: ${{ github.event.inputs.confirm_apply != 'yes' }}
+      - name: Display Terraform Plan
         run: |
-          echo "You chose not to apply the changes. Exiting the workflow."
-          exit 0
+          echo "Here is the Terraform plan for review:"
+          terraform show -no-color tfplan
 
-      - name: Apply Terraform
-        if: ${{ github.event.inputs.confirm_apply == 'yes' }}
+      - name: Wait for Manual Approval
+        uses: hmarr/auto-approve-action@v2 # External GitHub action to pause for manual approval
+        with:
+          prompt: "Do you approve this Terraform plan for ${GITHUB_EVENT.inputs.environment} in region ${GITHUB_EVENT.inputs.region}?"
+        if: success()
+
+      - name: Apply Terraform Changes
+        if: ${{ success() }}
         run: |
           echo "Applying Terraform changes to environment: ${{ github.event.inputs.environment }} in region: ${{ github.event.inputs.region }}"
-          terraform apply -auto-approve -var="environment=${{ github.event.inputs.environment }}" \
-                          -var="region=${{ github.event.inputs.region }}" \
-                          -var-file=environments/${{ github.event.inputs.environment }}/variables.tfvars
+          terraform apply -auto-approve tfplan
         env:
           TF_LOG: ERROR
-        continue-on-error: false
 
       - name: Completion Message
         if: ${{ success() }}
         run: |
           echo "Terraform deployment completed successfully for environment: ${{ github.event.inputs.environment }} in region: ${{ github.event.inputs.region }} 🎉"
-
-      - name: Error Message
-        if: ${{ failure() }}
-        run: |
-          echo "An error occurred during the Terraform deployment for environment: ${{ github.event.inputs.environment }} in region: ${{ github.event.inputs.region }} ❌"
-          exit 1
-
