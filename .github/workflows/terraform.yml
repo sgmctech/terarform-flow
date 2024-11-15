@@ -48,10 +48,11 @@ jobs:
         id: plan
         run: |
           echo "Generating Terraform plan for environment: ${{ github.event.inputs.environment }} in region: ${{ github.event.inputs.region }}"
-          terraform plan -var="environment=${{ github.event.inputs.environment }}" \
-                         -var="region=${{ github.event.inputs.region }}" \
-                         -var-file=environments/${{ github.event.inputs.environment }}/variables.tfvars \
-                         -out=tfplan
+          terraform plan -out=tfplan
+#          terraform plan -var="environment=${{ github.event.inputs.environment }}" \
+#                         -var="region=${{ github.event.inputs.region }}" \
+#                         -var-file=environments/${{ github.event.inputs.environment }}/variables.tfvars \
+#                         -out=tfplan
         env:
           TF_LOG: ERROR
 
