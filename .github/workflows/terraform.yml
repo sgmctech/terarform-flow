@@ -79,7 +79,8 @@ jobs:
 
       - name: Completion Message
         if: ${{ success() }}
-        run: echo "Terraform deployment completed successfully for environment: ${{ github.event.inputs.environment }} in region: ${{ github.event.inputs.region }} 🎉"
+        run: |
+          echo "Terraform deployment completed successfully for environment: ${{ github.event.inputs.environment }} in region: ${{ github.event.inputs.region }} 🎉"
 
       - name: Error Message
         if: ${{ failure() }}
