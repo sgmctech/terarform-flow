@@ -37,9 +37,10 @@ jobs:
       - name: Initialize Terraform
         run: |
           echo "Initializing Terraform for environment: ${{ github.event.inputs.environment }} in region: ${{ github.event.inputs.region }}"
-          terraform init -backend-config="bucket=terraform-state-${{ github.event.inputs.environment }}" \
-                         -backend-config="key=${{ github.event.inputs.environment }}/terraform.tfstate" \
-                         -backend-config="region=${{ github.event.inputs.region }}"
+          terraform init 
+#          terraform init -backend-config="bucket=terraform-state-${{ github.event.inputs.environment }}" \
+#                         -backend-config="key=${{ github.event.inputs.environment }}/terraform.tfstate" \
+#                         -backend-config="region=${{ github.event.inputs.region }}"
         env:
           TF_LOG: ERROR
 
